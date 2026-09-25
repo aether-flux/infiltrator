@@ -1,11 +1,12 @@
 use std::io::{self, Write};
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 
 use crate::{actions::handle::handle_action, config::Config};
 
 mod actions;
 mod config;
+mod gui;
 mod os;
 
 fn main() -> Result<()> {

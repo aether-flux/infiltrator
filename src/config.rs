@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::{Result, anyhow};
+use directories::ProjectDirs;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -39,30 +40,34 @@ impl Config {
 
     /// Get path to config file
     pub fn get_config_path() -> Result<PathBuf> {
-        let path = PathBuf::from("./config.toml");
-        Ok(path)
+        if let Some(proj_dirs) = ProjectDirs::from("", "", "infiltrator") {
+            let config_dir = proj_dirs.config_dir();
+            fs::create_dir_all(config_dir)?;
+            Ok(config_dir.join("config.toml"))
+        } else {
+            Err(anyhow::anyhow!("Failed to resolve user config directory"))
+        }
     }
 
     /// Create default config if file doesn't exist
     pub fn create_default_config(path: &Path) -> Result<()> {
         let default_toml = r#"
 [macros]
-":ip:" = { type = "shell", cmd = "curl -s ifconfig.me" }
+"ip" = { type = "shell_output", cmd = "curl -s ifconfig.me" }
 "email" = { type = "text", value = "user@example.com" }
-":clip:" = { type = "clipboard", value = "Infiltrator Macro Active!" }
 "browser" = { type = "open", url = "https://github.com" }
 "#;
 
-        fs::write(path, &default_toml.trim())?;
+        fs::write(path, default_toml.trim())?;
         Ok(())
     }
 
     /// Get entry action of given macro
     pub fn get_action(&self, macro_val: &str) -> Result<&MacroAction> {
         if let Some(m) = self.macros.get(macro_val) {
-            return Ok(m);
+            Ok(m)
         } else {
-            return Err(anyhow!("Input macro has no action associated with it"));
+            Err(anyhow!("Input macro has no action associated with it"))
         }
     }
 }

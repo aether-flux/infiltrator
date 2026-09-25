@@ -2,14 +2,13 @@ use std::process::Stdio;
 
 use anyhow::{Context, Result};
 
-use crate::os::open;
+use crate::os::open::open_commands;
 
-pub fn open_action(url: &String) -> Result<()> {
+pub fn open_action(url: &str) -> Result<()> {
     let mut last_err = None;
-    for mut cmd in open::commands(url) {
+    for mut cmd in open_commands(url) {
         cmd.stdout(Stdio::null()).stderr(Stdio::null());
 
-        // `spawn` launches process asynchronously
         match cmd.spawn() {
             Ok(_) => return Ok(()),
             Err(e) => last_err = Some(e),

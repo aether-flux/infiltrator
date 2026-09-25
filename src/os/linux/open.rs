@@ -15,7 +15,7 @@ fn option_safe_path(path: &OsStr) -> OsString {
     }
 }
 
-pub fn commands<T: AsRef<OsStr>>(path: T) -> Vec<Command> {
+pub fn open_commands<T: AsRef<OsStr>>(path: T) -> Vec<Command> {
     let path = path.as_ref();
     let mut commands = vec![];
 
