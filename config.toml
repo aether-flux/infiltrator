@@ -1,0 +1,5 @@
+[macros]
+"ip" = { type = "shell_output", cmd = "curl -s ifconfig.me" }
+"email" = { type = "text", value = "user@example.com" }
+"clip" = { type = "clipboard", value = "Infiltrator Macro Active!" }
+"browser" = { type = "open", url = "https://github.com" }
