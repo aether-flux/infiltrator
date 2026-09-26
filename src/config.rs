@@ -61,7 +61,8 @@ impl Config {
     pub fn create_default_config(path: &Path) -> Result<()> {
         let default_toml = r#"
 [macros]
-"ip" = { type = "shell_output", cmd = "curl -s ifconfig.me" }
+"date" = { type = "shell_output", cmd = "date '+%d/%m/%Y'" }
+"time" = { type = "shell_output", cmd = "date '+%H:%M'" }
 "email" = { type = "text", value = "user@example.com" }
 "browser" = { type = "open", url = "https://github.com" }
 "#;
