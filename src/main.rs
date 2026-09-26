@@ -1,5 +1,3 @@
-use std::io::{self, Write};
-
 use anyhow::Result;
 
 use crate::{config::Config, gui::run_overlay};
