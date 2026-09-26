@@ -18,8 +18,16 @@ pub enum MacroAction {
     Open { url: String },
 }
 
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct Theme {
+    pub primary: Option<[u8; 3]>,
+    pub secondary: Option<[u8; 3]>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct Config {
+    #[serde(default)]
+    pub theme: Theme,
     macros: HashMap<String, MacroAction>,
 }
 
