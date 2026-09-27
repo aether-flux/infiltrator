@@ -4,6 +4,7 @@ use anyhow::{Context, Result};
 
 use crate::os::open::open_commands;
 
+/// Open the provided URL in browser
 pub fn open_action(url: &str) -> Result<()> {
     let mut last_err = None;
     for mut cmd in open_commands(url) {

@@ -1,5 +1,7 @@
 use std::process::Command;
 
+/// Returns a vector of commands to copy a value to clipboard. If one command doesn't work, it tries
+/// the next command in order.
 pub fn clipboard_commands(value: &str) -> Vec<Command> {
     let mut commands = vec![];
 

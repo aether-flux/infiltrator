@@ -1,3 +1,6 @@
+//! This module handles the configuration options of `infiltrator`.
+//! In Linux, the config file is stored at `~/.config/infiltrator/config.toml`/
+
 use std::{
     collections::HashMap,
     fs,
@@ -11,28 +14,33 @@ use serde::Deserialize;
 #[derive(Debug, Deserialize, Clone)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum MacroAction {
+    /// Type given text value in focused window
     Text { value: String },
-    Shell { cmd: String },
+    /// Run a command and copy the output to clipboard
     ShellOutput { cmd: String },
-    Clipboard { value: String },
+    /// Open a URL in the browser
     Open { url: String },
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct Theme {
+    /// Primary color (r, g, b)
     pub primary: Option<[u8; 3]>,
+    /// Secondary color (r, g, b)
     pub secondary: Option<[u8; 3]>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
+    /// Set theme
     #[serde(default)]
     pub theme: Theme,
+    /// Set macro keywords and actions
     macros: HashMap<String, MacroAction>,
 }
 
 impl Config {
-    /// Load config path
+    /// Load config from file
     pub fn load() -> Result<Self> {
         let path = Self::get_config_path()?;
 
@@ -64,7 +72,7 @@ impl Config {
 "date" = { type = "shell_output", cmd = "date '+%d/%m/%Y'" }
 "time" = { type = "shell_output", cmd = "date '+%H:%M'" }
 "email" = { type = "text", value = "user@example.com" }
-"browser" = { type = "open", url = "https://github.com" }
+"infiltrator" = { type = "open", url = "https://github.com/aether-flux/infiltrator" }
 "#;
 
         fs::write(path, default_toml.trim())?;

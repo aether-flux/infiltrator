@@ -1,0 +1,877 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+src/
+  actions/
+    clipboard.rs
+    handle.rs
+    keyboard.rs
+    mod.rs
+    open.rs
+    shell.rs
+  os/
+    linux/
+      clipboard.rs
+      keyboard.rs
+      mod.rs
+      open.rs
+      shell.rs
+    mod.rs
+  config.rs
+  gui.rs
+  main.rs
+.gitignore
+Cargo.toml
+GoogleSansFlex_120pt-Regular.ttf
+LICENSE.txt
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="LICENSE.txt">
+The MIT License (MIT)
+
+Copyright (c) 2026 Amartya Chowdhury
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</file>
+
+<file path="src/actions/keyboard.rs">
+use anyhow::{Context, Result};
+
+use crate::os::keyboard::type_text;
+
+/// Type the specified text into current focused window
+pub fn text_action(text: &str) -> Result<()> {
+    type_text(text).context("Failed to inject text into focused window")?;
+    Ok(())
+}
+</file>
+
+<file path="src/os/linux/clipboard.rs">
+use std::process::Command;
+
+/// Returns a vector of commands to copy a value to clipboard. If one command doesn't work, it tries
+/// the next command in order.
+pub fn clipboard_commands(value: &str) -> Vec<Command> {
+    let mut commands = vec![];
+
+    let mut wl_copy = Command::new("wl-copy");
+    wl_copy.arg("--").arg(value);
+    commands.push(wl_copy);
+
+    let mut xclip = Command::new("xclip");
+    xclip
+        .args(["-selection", "clipboard", "-n", "--"])
+        .arg(value);
+    commands.push(xclip);
+
+    commands
+}
+</file>
+
+<file path="src/os/linux/shell.rs">
+use std::{env, process::Command};
+
+/// Creates a command from the given string to be executed
+pub fn create_command(cmd_str: &str) -> Command {
+    let shell = env::var("SHELL").unwrap_or("/bin/sh".to_string());
+
+    let mut cmd = Command::new(shell);
+    cmd.arg("-c").arg(cmd_str);
+
+    cmd
+}
+</file>
+
+<file path="src/os/mod.rs">
+//! Central module to handle cross-platform modules and code.
+//! Currently, only `linux` is supported.
+//! Further modules like `windows` and `mac` may be supported in the future.
+
+pub mod linux;
+pub use linux::*;
+</file>
+
+<file path="src/actions/clipboard.rs">
+use std::process::Stdio;
+
+use anyhow::{Context, Result};
+
+use crate::os::clipboard::clipboard_commands;
+
+/// Copy the specified value to clipboard
+pub fn clipboard_action(value: &str) -> Result<()> {
+    let mut last_err = None;
+    for mut cmd in clipboard_commands(value) {
+        cmd.stdout(Stdio::null()).stderr(Stdio::null());
+
+        match cmd.spawn() {
+            Ok(_) => return Ok(()),
+            Err(e) => last_err = Some(e),
+        }
+    }
+
+    Err(last_err
+        .context("No clipboard manager worked, at least one error")?
+        .into())
+}
+</file>
+
+<file path="src/actions/handle.rs">
+#![allow(unreachable_patterns)]
+
+use anyhow::Result;
+
+use crate::{
+    actions::{keyboard::text_action, open::open_action, shell::shell_output_action},
+    config::MacroAction,
+};
+
+/// Handle the specified `MacroAction`
+pub fn handle_action(action: &MacroAction) -> Result<()> {
+    match action {
+        MacroAction::Text { value } => text_action(value)?,
+        MacroAction::Open { url } => open_action(url)?,
+        MacroAction::ShellOutput { cmd } => shell_output_action(cmd)?,
+
+        _ => {}
+    }
+
+    Ok(())
+}
+</file>
+
+<file path="src/actions/mod.rs">
+//! This module defines the central APIs to handle the different types of macro actions supported by
+//! `infiltrator`. The supported actions can be found in the `MacroActions` enum page.
+
+pub mod clipboard;
+pub mod handle;
+pub mod keyboard;
+pub mod open;
+pub mod shell;
+</file>
+
+<file path="src/actions/open.rs">
+use std::process::Stdio;
+
+use anyhow::{Context, Result};
+
+use crate::os::open::open_commands;
+
+/// Open the provided URL in browser
+pub fn open_action(url: &str) -> Result<()> {
+    let mut last_err = None;
+    for mut cmd in open_commands(url) {
+        cmd.stdout(Stdio::null()).stderr(Stdio::null());
+
+        match cmd.spawn() {
+            Ok(_) => return Ok(()),
+            Err(e) => last_err = Some(e),
+        }
+    }
+
+    Err(last_err
+        .context("No launcher worked, at least one error")?
+        .into())
+}
+</file>
+
+<file path="src/actions/shell.rs">
+use anyhow::{Context, Result};
+
+use crate::{actions::clipboard::clipboard_action, os::shell::create_command};
+
+/// Run the given command and copy its output
+pub fn shell_output_action(cmd: &str) -> Result<()> {
+    let output = create_command(cmd)
+        .output()
+        .with_context(|| format!("Failed to spawn command: {}", cmd))?;
+
+    if !output.status.success() {
+        let stderr_msg = String::from_utf8_lossy(&output.stderr);
+        anyhow::bail!(
+            "Command failed with exit code {:?}: {}",
+            output.status.code(),
+            stderr_msg.trim()
+        );
+    }
+
+    let stdout_str =
+        String::from_utf8(output.stdout).context("Command output was not a valid UTF-8")?;
+    let trimmed = stdout_str.trim();
+
+    clipboard_action(trimmed)?;
+
+    Ok(())
+}
+</file>
+
+<file path="src/os/linux/mod.rs">
+//! This module contains everything that works in `linux` operating system.
+
+pub mod clipboard;
+pub mod keyboard;
+pub mod open;
+pub mod shell;
+
+/// Returns `true` if the current session is **Wayland**
+pub fn is_wayland() -> bool {
+    std::env::var("XDG_SESSION_TYPE")
+        .map(|s| s.eq_ignore_ascii_case("wayland"))
+        .unwrap_or_else(|_| std::env::var("WAYLAND_DISPLAY").is_ok())
+}
+</file>
+
+<file path="src/os/linux/open.rs">
+use std::{
+    ffi::{OsStr, OsString},
+    process::Command,
+};
+
+/// Normalizes paths starting with '-' into './-'
+fn option_safe_path(path: &OsStr) -> OsString {
+    use std::os::unix::ffi::OsStrExt;
+
+    if path.as_bytes().first() == Some(&b'-') {
+        let mut safe = OsString::from("./");
+        safe.push(path);
+        safe
+    } else {
+        path.to_os_string()
+    }
+}
+
+/// Returns a vector of commands to open the given URL in browser. If one command fails, it tries
+/// the next command in order.
+pub fn open_commands<T: AsRef<OsStr>>(path: T) -> Vec<Command> {
+    let path = path.as_ref();
+    let mut commands = vec![];
+
+    let safe_path = option_safe_path(path);
+
+    let mut xdg = Command::new("xdg-open");
+    xdg.arg(&safe_path);
+    commands.push(xdg);
+
+    let mut gio = Command::new("gio");
+    gio.arg("open").arg(&safe_path);
+    commands.push(gio);
+
+    let mut gnome = Command::new("gnome-open");
+    gnome.arg(&safe_path);
+    commands.push(gnome);
+
+    let mut kde = Command::new("kde-open");
+    kde.arg("--").arg(path);
+    commands.push(kde);
+
+    commands
+}
+</file>
+
+<file path=".gitignore">
+/target
+/docs
+</file>
+
+<file path="Cargo.toml">
+[package]
+name = "infiltrator"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.104"
+directories = "6.0.0"
+eframe = "0.36.2"
+enigo = { version = "0.6.1", features = ["serde"] }
+serde = { version = "1.0.229", features = ["derive"] }
+toml = "1.1.6"
+</file>
+
+<file path="src/os/linux/keyboard.rs">
+use std::{
+    process::{Command, Stdio},
+    thread,
+    time::Duration,
+};
+
+use anyhow::Result;
+use enigo::{Enigo, Keyboard, Settings};
+
+use crate::os::is_wayland;
+
+/// Types out the given text into the focused window depending on the session (**Wayland** /
+/// **X11**)
+pub fn type_text(text: &str) -> Result<()> {
+    let text = text.to_string();
+    let wayland = is_wayland();
+
+    thread::spawn(move || {
+        // Delay: allow 'infiltrator' process/window to exit
+        // thread::sleep(Duration::from_millis(200));
+        thread::sleep(Duration::from_secs(3));
+
+        if wayland {
+            // Wayland
+            let wayland_display =
+                std::env::var("WAYLAND_DISPLAY").unwrap_or_else(|_| "wayland-0".to_string());
+            let xdg_runtime = std::env::var("XDG_RUNTIME_DIR").unwrap_or_default();
+
+            let _ = Command::new("wtype")
+                .arg("--")
+                .arg(&text)
+                .env("WAYLAND_DISPLAY", wayland_display)
+                .env("XDG_RUNTIME_DIR", xdg_runtime)
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .output();
+        } else if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
+            // X11
+            let _ = enigo.text(&text);
+        }
+    });
+
+    Ok(())
+}
+</file>
+
+<file path="src/config.rs">
+//! This module handles the configuration options of `infiltrator`.
+//! In Linux, the config file is stored at `~/.config/infiltrator/config.toml`/
+
+use std::{
+    collections::HashMap,
+    fs,
+    path::{Path, PathBuf},
+};
+
+use anyhow::{Result, anyhow};
+use directories::ProjectDirs;
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum MacroAction {
+    /// Type given text value in focused window
+    Text { value: String },
+    /// Run a command and copy the output to clipboard
+    ShellOutput { cmd: String },
+    /// Open a URL in the browser
+    Open { url: String },
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct Theme {
+    /// Primary color (r, g, b)
+    pub primary: Option<[u8; 3]>,
+    /// Secondary color (r, g, b)
+    pub secondary: Option<[u8; 3]>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Config {
+    /// Set theme
+    #[serde(default)]
+    pub theme: Theme,
+    /// Set macro keywords and actions
+    macros: HashMap<String, MacroAction>,
+}
+
+impl Config {
+    /// Load config from file
+    pub fn load() -> Result<Self> {
+        let path = Self::get_config_path()?;
+
+        if !path.exists() {
+            Self::create_default_config(&path)?;
+        }
+
+        let content = fs::read_to_string(&path)?;
+        let config: Config = toml::from_str(&content)?;
+
+        Ok(config)
+    }
+
+    /// Get path to config file
+    pub fn get_config_path() -> Result<PathBuf> {
+        if let Some(proj_dirs) = ProjectDirs::from("", "", "infiltrator") {
+            let config_dir = proj_dirs.config_dir();
+            fs::create_dir_all(config_dir)?;
+            Ok(config_dir.join("config.toml"))
+        } else {
+            Err(anyhow::anyhow!("Failed to resolve user config directory"))
+        }
+    }
+
+    /// Create default config if file doesn't exist
+    pub fn create_default_config(path: &Path) -> Result<()> {
+        let default_toml = r#"
+[macros]
+"date" = { type = "shell_output", cmd = "date '+%d/%m/%Y'" }
+"time" = { type = "shell_output", cmd = "date '+%H:%M'" }
+"email" = { type = "text", value = "user@example.com" }
+"infiltrator" = { type = "open", url = "https://github.com/aether-flux/infiltrator" }
+"#;
+
+        fs::write(path, default_toml.trim())?;
+        Ok(())
+    }
+
+    /// Get entry action of given macro
+    pub fn get_action(&self, macro_val: &str) -> Result<&MacroAction> {
+        if let Some(m) = self.macros.get(macro_val) {
+            Ok(m)
+        } else {
+            Err(anyhow!("Input macro has no action associated with it"))
+        }
+    }
+}
+</file>
+
+<file path="src/gui.rs">
+//! The GUI frontend of the application. Made with `eframe` and `egui`.
+
+use std::time::Instant;
+
+use anyhow::Result;
+use eframe::{
+    egui,
+    epaint::text::{FontInsert, InsertFontFamily},
+};
+
+use crate::{actions::handle::handle_action, config::Config};
+
+pub struct InfiltratorApp {
+    config: Config,
+    query: String,
+    focus_set: bool,
+    start_time: Instant,
+}
+
+impl InfiltratorApp {
+    pub fn new(config: Config) -> Self {
+        Self {
+            config,
+            query: String::new(),
+            focus_set: false,
+            start_time: Instant::now(),
+        }
+    }
+}
+
+impl eframe::App for InfiltratorApp {
+    fn clear_color(&self, _visuals: &egui::Visuals) -> [f32; 4] {
+        // Semi-transparent dark overlay
+        egui::Rgba::from_rgba_unmultiplied(0.02, 0.02, 0.04, 0.25).to_array()
+    }
+
+    fn ui(&mut self, ctx: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        ctx.request_repaint();
+
+        let elapsed = self.start_time.elapsed().as_secs_f32();
+
+        let primary_rgb = self.config.theme.primary.unwrap_or([255, 15, 123]);
+        let secondary_rgb = self.config.theme.secondary.unwrap_or([248, 155, 41]);
+
+        // Close on 'Esc'
+        if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+            return;
+        }
+
+        // Add font
+        ctx.add_font(FontInsert::new(
+            "google sans",
+            egui::FontData::from_static(include_bytes!("../GoogleSansFlex_120pt-Regular.ttf")),
+            vec![InsertFontFamily {
+                family: egui::FontFamily::Proportional,
+                priority: egui::epaint::text::FontPriority::Highest,
+            }],
+        ));
+
+        // Replace fonts
+        let mut fonts = egui::FontDefinitions::default();
+
+        fonts.font_data.insert(
+            "google sans".to_owned(),
+            std::sync::Arc::new(egui::FontData::from_static(include_bytes!(
+                "../GoogleSansFlex_120pt-Regular.ttf"
+            ))),
+        );
+
+        fonts
+            .families
+            .entry(egui::FontFamily::Proportional)
+            .or_default()
+            .insert(0, "google sans".to_owned());
+
+        ctx.set_fonts(fonts);
+
+        // Fullscreen backdrop and waves
+        egui::CentralPanel::default()
+            .frame(egui::Frame::NONE.fill(egui::Color32::from_black_alpha(160)))
+            .show(ctx, |ui| {
+                let rect = ui.max_rect();
+                let painter = ui.painter();
+
+                // Gradient
+                let pulse = (elapsed * 2.0).sin() * 0.15 + 0.85;
+                let glow_c1 = egui::Color32::from_rgba_unmultiplied(
+                    primary_rgb[0],
+                    primary_rgb[1],
+                    primary_rgb[2],
+                    (45.0 * pulse) as u8,
+                );
+                let glow_c2 = egui::Color32::from_rgba_unmultiplied(
+                    secondary_rgb[0],
+                    secondary_rgb[1],
+                    secondary_rgb[2],
+                    (45.0 * pulse) as u8,
+                );
+
+                // top and bottom edge glow
+                let edge_thickness = 180.0;
+
+                paint_linear_glow(
+                    painter,
+                    egui::Rect::from_min_max(
+                        rect.min,
+                        egui::pos2(rect.max.x, rect.min.y + edge_thickness),
+                    ),
+                    glow_c2,
+                    true,
+                );
+                paint_linear_glow(
+                    painter,
+                    egui::Rect::from_min_max(
+                        egui::pos2(rect.min.x, rect.max.y - edge_thickness),
+                        rect.max,
+                    ),
+                    glow_c1,
+                    false,
+                );
+
+                // corner radial
+                let cor_rad = 320.0;
+                paint_radial_glow(painter, rect.min, cor_rad, glow_c1);
+                paint_radial_glow(
+                    painter,
+                    egui::pos2(rect.max.x, rect.min.y),
+                    cor_rad,
+                    glow_c2,
+                );
+                paint_radial_glow(
+                    painter,
+                    egui::pos2(rect.min.x, rect.max.y),
+                    cor_rad,
+                    glow_c2,
+                );
+                paint_radial_glow(painter, rect.max, cor_rad, glow_c1);
+
+                // Wave
+                let wave_color =
+                    egui::Color32::from_rgb(secondary_rgb[0], secondary_rgb[1], secondary_rgb[2]);
+                let thick_wave_color = egui::Color32::from_rgba_unmultiplied(
+                    primary_rgb[0],
+                    primary_rgb[1],
+                    primary_rgb[2],
+                    45,
+                );
+
+                let wave_center_y = rect.center().y + 100.0;
+                let mut wave_pts_main: Vec<egui::Pos2> = Vec::new();
+                let mut wave_pts_glow: Vec<egui::Pos2> = Vec::new();
+
+                for x in (0..rect.width() as i32).step_by(6) {
+                    let x_f = x as f32;
+
+                    // main wave
+                    let y_main = wave_center_y
+                        + (x_f * 0.012 + elapsed * 3.2).sin() * 14.0
+                        + (x_f * 0.025 - elapsed * 2.1).cos() * 8.0;
+                    wave_pts_main.push(egui::pos2(x_f, y_main));
+
+                    // secondary wave
+                    let y_glow = wave_center_y
+                        + (x_f * 0.009 - elapsed * 2.5).cos() * 20.0
+                        + (x_f * 0.018 + elapsed * 1.8).sin() * 10.0;
+                    wave_pts_glow.push(egui::pos2(x_f, y_glow));
+                }
+
+                for window in wave_pts_glow.windows(2) {
+                    painter.line_segment(
+                        [window[0], window[1]],
+                        egui::Stroke::new(8.0, thick_wave_color),
+                    );
+                }
+
+                for window in wave_pts_main.windows(2) {
+                    painter
+                        .line_segment([window[0], window[1]], egui::Stroke::new(2.5, wave_color));
+                }
+
+                // Borderless text box
+                let hud_width = 800.0;
+                let hud_rect = egui::Rect::from_center_size(
+                    egui::pos2(rect.center().x, rect.center().y - 40.0),
+                    egui::vec2(hud_width, 160.0),
+                );
+
+                ui.scope_builder(egui::UiBuilder::new().max_rect(hud_rect), |ui| {
+                    ui.vertical_centered(|ui| {
+                        let text_edit = egui::TextEdit::singleline(&mut self.query)
+                            .hint_text(
+                                egui::RichText::new("Start typing...")
+                                    .font(egui::FontId::proportional(60.0))
+                                    .color(egui::Color32::from_rgba_unmultiplied(
+                                        160, 160, 180, 120,
+                                    )),
+                            )
+                            .font(egui::FontId::proportional(60.0))
+                            .text_color(egui::Color32::from_rgb(240, 242, 255))
+                            .horizontal_align(egui::Align::Center)
+                            .frame(egui::Frame::NONE)
+                            .desired_width(hud_width);
+
+                        let response = ui.add(text_edit);
+
+                        if !self.focus_set {
+                            response.request_focus();
+                            self.focus_set = true;
+                        }
+
+                        ui.add_space(40.0);
+
+                        let keyword = self.query.trim().to_string();
+
+                        if keyword.is_empty() {
+                            ui.label(
+                                egui::RichText::new("Press Esc to cancel").size(20.0).color(
+                                    egui::Color32::from_rgba_unmultiplied(180, 180, 200, 140),
+                                ),
+                            );
+                        } else if let Ok(action) = self.config.get_action(&keyword) {
+                            ui.label(
+                                egui::RichText::new(format!("Action: {:?}", action))
+                                    .size(20.0)
+                                    .color(egui::Color32::from_rgb(110, 235, 160)),
+                            );
+
+                            if response.lost_focus()
+                                && ui.input(|i| i.key_pressed(egui::Key::Enter))
+                            {
+                                let action = action.clone();
+                                let _ = handle_action(&action);
+                                ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+                            }
+                        } else {
+                            ui.label(
+                                egui::RichText::new(format!(
+                                    "No macro registered for '{}'",
+                                    keyword
+                                ))
+                                .size(20.0)
+                                .color(egui::Color32::from_rgb(240, 110, 110)),
+                            );
+                        }
+                    });
+                });
+            });
+    }
+}
+
+pub fn run_overlay(config: Config) -> Result<()> {
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_decorations(false)
+            .with_transparent(true)
+            .with_fullscreen(true)
+            .with_always_on_top(),
+        ..Default::default()
+    };
+
+    eframe::run_native(
+        "Infiltrator",
+        options,
+        Box::new(|_cc| Ok(Box::new(InfiltratorApp::new(config)))),
+    )?;
+
+    Ok(())
+}
+
+// Helpers
+fn paint_radial_glow(
+    painter: &egui::Painter,
+    center: egui::Pos2,
+    radius: f32,
+    color: egui::Color32,
+) {
+    use egui::epaint::{Mesh, Shape, Vertex, WHITE_UV};
+    let segments = 48;
+    let mut mesh = Mesh::default();
+    let edge_color = egui::Color32::from_rgba_unmultiplied(color.r(), color.g(), color.b(), 0);
+
+    mesh.vertices.push(Vertex {
+        pos: center,
+        uv: WHITE_UV,
+        color,
+    });
+    for i in 0..=segments {
+        let angle = (i as f32 / segments as f32) * std::f32::consts::TAU;
+        let pos = center + egui::vec2(angle.cos(), angle.sin()) * radius;
+        mesh.vertices.push(Vertex {
+            pos,
+            uv: WHITE_UV,
+            color: edge_color,
+        });
+    }
+    for i in 1..=segments {
+        mesh.indices.extend_from_slice(&[0, i as u32, i as u32 + 1]);
+    }
+    painter.add(Shape::mesh(mesh));
+}
+
+fn paint_linear_glow(
+    painter: &egui::Painter,
+    rect: egui::Rect,
+    color: egui::Color32,
+    fade_downward: bool,
+) {
+    use egui::epaint::{Mesh, Shape, Vertex, WHITE_UV};
+    let mut mesh = Mesh::default();
+    let transparent = egui::Color32::from_rgba_unmultiplied(color.r(), color.g(), color.b(), 0);
+    let (top, bottom) = if fade_downward {
+        (color, transparent)
+    } else {
+        (transparent, color)
+    };
+
+    mesh.vertices.push(Vertex {
+        pos: rect.left_top(),
+        uv: WHITE_UV,
+        color: top,
+    });
+    mesh.vertices.push(Vertex {
+        pos: rect.right_top(),
+        uv: WHITE_UV,
+        color: top,
+    });
+    mesh.vertices.push(Vertex {
+        pos: rect.right_bottom(),
+        uv: WHITE_UV,
+        color: bottom,
+    });
+    mesh.vertices.push(Vertex {
+        pos: rect.left_bottom(),
+        uv: WHITE_UV,
+        color: bottom,
+    });
+    mesh.indices.extend_from_slice(&[0, 1, 2, 0, 2, 3]);
+    painter.add(Shape::mesh(mesh));
+}
+</file>
+
+<file path="src/main.rs">
+//! # Infiltrator
+//!
+//! Infiltrator is an aesthetic, keyboard-driven macro overlay utility designed to streamline
+//! repetitive workflows. It supports triggering system actions, pasting dynamic shell command
+//! output, expanding static text blocks, and opening URLs in browsers.
+//!
+//! The application uses [`egui`](https://docs.rs/egui) to render a minimalist interface featuring
+//! customizable animated dynamic waves and ambient glows. It uses *Google Sans Flex* as the
+//! typography.
+//!
+//! ## Configuration
+//! On first launch, `infiltrator` automatically creates a default config file if one doesn't exist at `~/.config/infiltrator/config.toml`.
+//!
+//! ### Default macros (config)
+//! ```toml
+//! [macros]
+//! "date" = { type = "shell_output", cmd = "date '+%d/%m/%Y'" }
+//! "time" = { type = "shell_output", cmd = "date '+%H:%M'" }
+//! "email" = { type = "text", value = "user@example.com" }
+//! "infiltrator" = { type = "open", url = "https://github.com/aether-flux/infiltrator" }
+//! ```
+//!
+//! ### Action types
+//! The `type` field in `[macros]` determines how the key trigger is executed:
+//! - `shell_output`: Executes a shell command and copies the stdout to clipboard.
+//! - `text`: Simulates typing key events to expand the specified string into the active window.
+//! - `open`: Opens the given URL in your system's default browser.
+//!
+//! ### Custom themes
+//! Colors can be configured under the `[theme]` section using RGB array tuples. If omitted,
+//! `infiltrator` falls back to its default ambient palette:
+//!
+//! ```toml
+//! [theme]
+//! primary = [255, 15, 123]
+//! secondary = [248, 155, 41]
+//! ```
+
+use anyhow::Result;
+
+use crate::{config::Config, gui::run_overlay};
+
+mod actions;
+mod config;
+mod gui;
+mod os;
+
+fn main() -> Result<()> {
+    let config = Config::load()?;
+
+    run_overlay(config)?;
+    Ok(())
+}
+</file>
+
+</files>

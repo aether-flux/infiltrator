@@ -4,6 +4,7 @@ use anyhow::{Context, Result};
 
 use crate::os::clipboard::clipboard_commands;
 
+/// Copy the specified value to clipboard
 pub fn clipboard_action(value: &str) -> Result<()> {
     let mut last_err = None;
     for mut cmd in clipboard_commands(value) {

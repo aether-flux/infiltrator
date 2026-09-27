@@ -2,14 +2,7 @@ use anyhow::{Context, Result};
 
 use crate::{actions::clipboard::clipboard_action, os::shell::create_command};
 
-pub fn shell_action(cmd: &str) -> Result<()> {
-    create_command(cmd)
-        .status()
-        .with_context(|| format!("Failed to spawn command: {}", cmd))?;
-
-    Ok(())
-}
-
+/// Run the given command and copy its output
 pub fn shell_output_action(cmd: &str) -> Result<()> {
     let output = create_command(cmd)
         .output()

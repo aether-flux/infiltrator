@@ -1,3 +1,5 @@
+//! The GUI frontend of the application. Made with `eframe` and `egui`.
+
 use std::time::Instant;
 
 use anyhow::Result;

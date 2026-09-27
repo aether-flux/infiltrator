@@ -3,6 +3,7 @@ use std::{
     process::Command,
 };
 
+/// Normalizes paths starting with '-' into './-'
 fn option_safe_path(path: &OsStr) -> OsString {
     use std::os::unix::ffi::OsStrExt;
 
@@ -15,6 +16,8 @@ fn option_safe_path(path: &OsStr) -> OsString {
     }
 }
 
+/// Returns a vector of commands to open the given URL in browser. If one command fails, it tries
+/// the next command in order.
 pub fn open_commands<T: AsRef<OsStr>>(path: T) -> Vec<Command> {
     let path = path.as_ref();
     let mut commands = vec![];
