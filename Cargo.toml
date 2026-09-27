@@ -2,13 +2,13 @@
 name = "infiltrator"
 version = "1.0.0"
 edition = "2024"
-authors = ["Amartya Chowdhury work.amar05@yahoo.com"]
-description = "A sleek, aesthetic ambient macro overlay utility."
+authors = ["Amartya Chowdhury"]
+description = "A sleek, aesthetic keyboard-driven macro overlay for Linux. Expand text, run shell snippets, and open URLs from a fullscreen ambient overlay."
 readme = "README.md"
 repository = "https://github.com/aether-flux/infiltrator"
 homepage = "https://github.com/aether-flux/infiltrator"
 license = "MIT"
-keywords = ["wayland", "macro", "text", "egui", "overlay"]
+keywords = ["macro", "text-expander", "wayland", "overlay", "egui"]
 categories = ["command-line-utilities", "gui"]
 
 [package.metadata.docs.rs]
