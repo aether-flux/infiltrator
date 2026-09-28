@@ -1,5 +1,7 @@
 # Infiltrator
-tags
+[![Crates.io](https://img.shields.io/crates/v/infiltrator?style=for-the-badge&logo=rust&color=e05d44)](https://crates.io/crates/infiltrator)
+[![GitHub Release](https://img.shields.io/github/v/release/aether-flux/infiltrator?style=for-the-badge&logo=github&color=2bbc8a)](https://github.com/aether-flux/infiltrator/releases/latest)
+[![License](https://img.shields.io/github/license/aether-flux/infiltrator?style=for-the-badge&color=8a2be2)](LICENSE)
 
 Infiltrator is an aesthetic, keyboard-driven macro overlay utility designed to streamline repetitive workflows.
 media/screenshot
@@ -23,11 +25,6 @@ Infiltrator is able to support the following features:
 
 # Installation
 There are various ways to install Infiltrator on your system.
-
-### Arch Linux
-```sh
-yay -S infiltrator-bin
-```
 
 ### Install script
 ```sh
