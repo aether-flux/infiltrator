@@ -16,6 +16,16 @@ REPO="aether-flux/infiltrator"
 
 ### HEADING ASCII
 
+echo -e "${MAGENTA}${BOLD}"
+echo " _         ___ _ _                                    "
+echo "| |       / __|_) |  _                 _              "
+echo "| |____ _| |__ _| |_| |_  ____ _____ _| |_ ___   ____ "
+echo "| |  _ (_   __) | (_   _)/ ___|____ (_   _) _ \ / ___)"
+echo "| | | | || |  | | | | |_| |   / ___ | | || |_| | |    "
+echo "|_|_| |_||_|  |_|\_) \__)_|   \_____|  \__)___/|_|    "
+echo -e "${RESET}"
+echo ""
+
 # Environment check
 echo -e "${BLUE}[1/4] Checking system environment...${RESET}"
 
@@ -95,5 +105,5 @@ echo -e "  ${CYAN}Sway/i3:${RESET}          bindsym \$mod+space exec infiltrator
 echo -e "  ${CYAN}sxhkd (bspwm):${RESET}"
 echo -e "  super + space"
 echo -e "    infiltrator"
-echo -e "  ${CYAN}KDE, GNOME, etc:${RESET}  Add custom shortcut for 'infiltrator' in System Settings"
+echo -e "  ${CYAN}KDE, Gnome, etc:${RESET}  Add custom shortcut for 'infiltrator' in System Settings"
 echo ""
