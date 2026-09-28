@@ -72,7 +72,7 @@ TMP_DIR=$(mktemp -d)
 TAR_URL="https://github.com/$REPO/releases/download/$LATEST_TAG/infiltrator-x86_64-unknown-linux-gnu.tar.gz"
 
 curl -sL "$TAR_URL" -o "$TMP_DIR/infiltrator.tar.gz"
-tar -xzf "$TMP_DIR/infiltrator.tar.gz" -C "$TMP_DIR"
+tar -xzf "$TMP_DIR/infiltrator.tar.gz" -C "$TMP_DIR" --strip-components=1
 
 cp "$TMP_DIR/infiltrator" "$BIN_DIR/infiltrator"
 chmod +x "$BIN_DIR/infiltrator"
