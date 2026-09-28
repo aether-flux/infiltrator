@@ -4,7 +4,8 @@
 [![License](https://img.shields.io/github/license/aether-flux/infiltrator?style=for-the-badge&color=8a2be2)](LICENSE)
 
 Infiltrator is an aesthetic, keyboard-driven macro overlay utility designed to streamline repetitive workflows.
-media/screenshot
+
+<video src="https://github.com/user-attachments/assets/954cbcaa-a253-42c0-95c5-f59003afd130" controls width="100%"></video>
 
 # Features
 Infiltrator is able to support the following features:
